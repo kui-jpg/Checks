@@ -19,6 +19,7 @@
             <RowDefinition/>
         </Grid.RowDefinitions>
         <Button Content="确认" Grid.Row="1"  Width="160" Height="50"  Click="Button_Click" Grid.Column="1" />
-        <Label x:Name="a" Content="请点击确认开始点检" Foreground="#FFF90101"  Grid.RowSpan="1" FontSize="48"  VerticalAlignment="Center" HorizontalAlignment="Center"   Grid.Column="1" Grid.ColumnSpan="3" />
+        <Label x:Name="a" Content="请点击确认开始点检" FontWeight="Bold" Foreground="#FFF90101"  Grid.RowSpan="1" FontSize="48"  VerticalAlignment="Center" HorizontalAlignment="Center"   Grid.Column="1" Grid.ColumnSpan="3" />
+      
     </Grid>
 </Window>
