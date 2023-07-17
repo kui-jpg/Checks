@@ -35,34 +35,23 @@ namespace Checks
         private string lasttime;
         private string inipath = @".\config.ini";
         DispatcherTimer dispatcherTimer = new DispatcherTimer();
-        //private System.Windows.Forms.NotifyIcon myNotifyIcon = new NotifyIcon();
+
         public MainWindow()
         {
             InitializeComponent();
 
             //byte[] msByte = Encoding.UTF8.GetBytes(IniReadValue("Message", "ms", inipath));
-            ms = IniReadValue("Message", "ms", inipath);
+            //ms = IniReadValue("Message", "ms", inipath);
             //ms = Encoding.UTF8.GetString(msByte);
-            this.a.Content = ms;
+            //this.a.Content = ms;
             this.Hide();
-
-
-            //System.Windows.Forms.MenuItem MenuItem_About = new System.Windows.Forms.MenuItem("About");
-            //MenuItem_About.Click += MenuItem_About_Click;
-            //System.Windows.Forms.MenuItem MenuItem_Exit = new System.Windows.Forms.MenuItem("Exit");
-            //MenuItem_Exit.Click += MenuItem_Exit_Click;
-            //System.Windows.Forms.MenuItem[] m = new System.Windows.Forms.MenuItem[] { MenuItem_About, MenuItem_Exit };
-            //this.myNotifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(m);
-
-            //myNotifyIcon.Text = "V:2022.3.17.1";
-            //// myNotifyIcon.Icon = Properties.Resources.R_C;
-            //myNotifyIcon.Visible = true;
 
 
             //判断程序是否开机启动
             string[] strArgs = Environment.GetCommandLineArgs();
             if (strArgs.Count()>1&&strArgs[1].ToString()=="-autorun")
             {
+                Writelog("开机启动，提示点检");
                 ShowWindow();
             }
 
@@ -79,6 +68,7 @@ namespace Checks
             Writelog("已确认");
             IniWriteValue("LastTime", "last", DateTime.Now.ToString("HH:mm:ss"), inipath);
             this.Hide();
+            dispatcherTimer.Start();
         }
 
 
@@ -116,10 +106,15 @@ namespace Checks
 
         }
 
+        /// <summary>
+        /// 检查是否提示
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void check(object sender, EventArgs e)
         {
             //SetProcessWorkingSetSize()
-
+            //Writelog("开始检查时间配置");
             //读取配置文件，获取点检时间
             times = Readini(inipath);
             //获取输出输出信息
@@ -132,26 +127,30 @@ namespace Checks
             {
                 if (times[i].ToString() != "" && times[i].ToString() != " " && DateTime.Now >= DateTime.Parse(times[i]) && DateTime.Now <= DateTime.Parse(times[i]).AddMinutes(10))
                 {
-                    lasttime = IniReadValue("LastTime", "last", inipath);
+                    //Writelog("当前时间已到设定时间范围");
                     if (!IsDate(lasttime))
                     {
                         IniWriteValue("LastTime", "last", DateTime.Now.ToString("HH:mm:ss"), inipath);
+                       // Writelog("上一次提醒时间格式错误");
+                        ShowWindow();
                         break;
                     }
                     if (DateTime.Parse(lasttime) > DateTime.Parse(times[i]) && DateTime.Parse(lasttime) < DateTime.Parse(times[i]).AddMinutes(10))
                     {
                         string a = times[i];
                         string b = DateTime.Now.ToString();
-                        break;
+                        //Writelog("十分钟内不提示");
                     }
                     else
                     {
-                        if (!this.IsVisible)
+                        //Writelog("在设定时间内");
+                        
+                        if (WindowState!=WindowState.Maximized)
                         {
+                            //Writelog("窗体最小化，打开窗体");
                             this.a.Content = ms;
                             ShowWindow();
                         }
-
 
                     }
                 }
@@ -253,6 +252,7 @@ namespace Checks
             GetPrivateProfileString(Section, Key, "", temp, 500, inipath);
             return temp.ToString();
         }
+
         [DllImport("kernel32")]
         private static extern long WritePrivateProfileString(string section, string key, string val, string filePath);
 
@@ -284,6 +284,10 @@ namespace Checks
                 e.Handled = false;    //or “ base.OnKeyDown(e);  ”
             }
         }
+
+        /// <summary>
+        /// 显示主窗体
+        /// </summary>
         private void ShowWindow()
         {
             
@@ -299,6 +303,7 @@ namespace Checks
                 this.Topmost = true;
                 this.Show();
                 Writelog("已提醒点检");
+                dispatcherTimer.Stop();
             }
         }
 
@@ -335,12 +340,7 @@ namespace Checks
             }
 
         }
-
-
-        /// <summary>
-        /// 检查是否设置开机自启
-        /// 若没有就设置成自启
-        /// </summary>
+        
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
