@@ -14,7 +14,6 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
-using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using System.Diagnostics;
@@ -34,7 +33,9 @@ namespace Checks
         private bool IsAuto;
         private string lasttime;
         private string inipath = @".\config.ini";
+        private DateTime msTime;
         DispatcherTimer dispatcherTimer = new DispatcherTimer();
+        private int ClickCount = 0;//判断点击次数
 
         public MainWindow()
         {
@@ -46,13 +47,15 @@ namespace Checks
             //this.a.Content = ms;
             this.Hide();
 
-
+            Writelog("程序启动 ");
+            //DateTime a = DateTime.Parse("15:52:06").AddMinutes(10);
             //判断程序是否开机启动
             string[] strArgs = Environment.GetCommandLineArgs();
-            if (strArgs.Count()>1&&strArgs[1].ToString()=="-autorun")
+            if (strArgs.Count() > 1 && strArgs[1].ToString() == "-auto")
             {
                 Writelog("开机启动，提示点检");
-                ShowWindow();
+                string[] msg = GetMessageByKey("PC");
+                ShowWindow(msg);
             }
 
             dispatcherTimer.Tick += new EventHandler(check);
@@ -66,12 +69,34 @@ namespace Checks
             //Thread.Sleep(2500);
             //this.Ischeck = false;
             Writelog("已确认");
-            IniWriteValue("LastTime", "last", DateTime.Now.ToString("HH:mm:ss"), inipath);
+            IniWriteValue("LastTime", "last",msTime.ToString("yyyy-MM-dd HH:mm:ss"), inipath);
             this.Hide();
             dispatcherTimer.Start();
         }
 
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            ClickCount++;
+            int requiredClicks = itemsControl.Items.Count;
+            if (sender is System.Windows.Controls.Button button)
+            {
+                string itemText = button.Content as string;
+                
+                if (itemText != null)
+                {
+                    button.Content = "已确认";
+                    button.IsEnabled = false;
+                }
+                
+            }
+            if (requiredClicks == ClickCount)
+            {
+                Y.IsEnabled = true;
+                ClickCount = 0;
+            }
+        }
 
+       
         /// <summary>
         /// 获取设置的时间
         /// </summary>
@@ -106,6 +131,25 @@ namespace Checks
 
         }
 
+
+
+        /// <summary>
+        /// 读取节点,获取提示信息
+        /// </summary>
+        /// <param name="setcionname">节点名称</param>
+        /// <returns></returns>
+        private string[] GetMessageByKey(string setcionname)
+        {
+            Dictionary<string, string> m = GetKeys(inipath, setcionname);
+            string[] msg = m.Values.ToArray();
+
+            for (int i = 0; i < msg.Length; i++)
+            {
+                msg[i] = msg[i].ToString().Trim('\'', '"');
+            }
+            return msg;
+        }
+
         /// <summary>
         /// 检查是否提示
         /// </summary>
@@ -117,44 +161,78 @@ namespace Checks
             //Writelog("开始检查时间配置");
             //读取配置文件，获取点检时间
             times = Readini(inipath);
+            //Writelog("进入check");
             //获取输出输出信息
-            ms = IniReadValue("Message", "ms", inipath);
             lasttime = IniReadValue("LastTime", "last", inipath);
-
-            //在提示时间段内，提示点检，当前时间段提示过不再提示
-            //检查当前时间与配置时间是否一致，检查范围为配置时间后10分钟以内
-            for (int i = 0; i < times.Count(); i++)
+            DateTime last = DateTime.Parse(lasttime);
+            DateTime now = DateTime.Now;
+            try
             {
-                if (times[i].ToString() != "" && times[i].ToString() != " " && DateTime.Now >= DateTime.Parse(times[i]) && DateTime.Now <= DateTime.Parse(times[i]).AddMinutes(10))
+                //在提示时间段内，提示点检，如果当前 时间段提示过不再提示
+
+                //提醒条件
+                //1、设置距离上一次提醒时间超过十分钟
+                //2、当前时间不超过设置时间十分钟
+                for (int i = 0; i < times.Count(); i++)
                 {
-                    //Writelog("当前时间已到设定时间范围");
-                    if (!IsDate(lasttime))
-                    {
-                        IniWriteValue("LastTime", "last", DateTime.Now.ToString("HH:mm:ss"), inipath);
-                       // Writelog("上一次提醒时间格式错误");
-                        ShowWindow();
-                        break;
-                    }
-                    if (DateTime.Parse(lasttime) > DateTime.Parse(times[i]) && DateTime.Parse(lasttime) < DateTime.Parse(times[i]).AddMinutes(10))
-                    {
-                        string a = times[i];
-                        string b = DateTime.Now.ToString();
-                        //Writelog("十分钟内不提示");
-                    }
-                    else
+
+
+                    DateTime check = DateTime.Parse(DateTime.Now.ToShortDateString() + " " + times[i].ToString());
+                    //当前时间不超过设定时间10分钟可以提醒
+                    if (CheckTimeConditions(last, check, now))
                     {
                         //Writelog("在设定时间内");
-                        
-                        if (WindowState!=WindowState.Maximized)
+                        if (WindowState != WindowState.Maximized || this.Visibility == Visibility.Hidden)
                         {
-                            //Writelog("窗体最小化，打开窗体");
-                            this.a.Content = ms;
-                            ShowWindow();
+                            //Writelog("获取提示内容");
+                            msTime = check;
+                            string[] msg = GetMessageByKey("message" + i);
+                            ShowWindow(msg);
+
                         }
 
                     }
                 }
             }
+            catch (Exception ex)
+            {
+
+                Writelog(ex.ToString());
+            }
+
+        }
+
+        /// <summary>
+        /// 提醒
+        /// </summary>
+        /// <param name="a">最后提醒时间</param>
+        /// <param name="b">设置提醒时间</param>
+        /// <param name="c">当前时间</param>
+        /// <returns></returns>
+        private bool CheckTimeConditions(DateTime a, DateTime b, DateTime c)
+        {
+            TimeSpan differenceAB = b - a;
+            TimeSpan differenceBC = c - b;
+            TimeSpan differenceAC = c - a;
+
+            // Check if a is earlier than b and c
+            if (a < b && a < c)
+            {
+                // Check if b is earlier than c
+                if (b < c)
+                {
+                    // Check if a is at least 10 minutes earlier than c
+                    // if (differenceAC.TotalMinutes >= 10)
+                    //{
+                    // Check if b and c are within 10 minutes
+                    if (differenceBC.TotalMinutes <= 10)
+                    {
+                        return true; // All conditions are met
+                    }
+                    // }
+                }
+            }
+            return false;
         }
 
         private bool IsDate(string str)
@@ -238,6 +316,31 @@ namespace Checks
         [DllImport("kernel32", CharSet = CharSet.Unicode)]
         private static extern int GetPrivateProfileString(string section, string key, string def, StringBuilder retVal, int size, string filePath);
 
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        private static extern int GetPrivateProfileSection(string lpAppName, byte[] lpszReturnBuffer, int nSize, string lpFileName);
+
+        /// <summary>
+        /// 通过节，获取节点下所有键和值
+        /// </summary>
+        /// <param name="iniFile">配置文件路径</param>
+        /// <param name="category">节点名称</param>
+        /// <returns></returns>
+        public static Dictionary<string, string> GetKeys(string iniFile, string category)
+        {
+
+            byte[] buffer = new byte[2048];
+
+            GetPrivateProfileSection(category, buffer, 2048, iniFile);
+            String[] tmp = Encoding.Unicode.GetString(buffer).Trim('\0').Split('\0');
+            Dictionary<string, string> result = new Dictionary<string, string>();
+            foreach (String entry in tmp)
+            {
+                string[] v = entry.Split('=');
+                result.Add(v[0], v[1]);
+            }
+            return result;
+        }
+
 
         /// <summary>
         /// 读取配置ini文件
@@ -288,21 +391,23 @@ namespace Checks
         /// <summary>
         /// 显示主窗体
         /// </summary>
-        private void ShowWindow()
+        private void ShowWindow(string[] ms)
         {
-            
+            //Writelog("全屏提示");
             //this.Width = System.Windows.SystemParameters.PrimaryScreenWidth;
             //this.Height = System.Windows.SystemParameters.PrimaryScreenHeight;
-            if (this.WindowState != WindowState.Maximized)
+            if (this.WindowState != WindowState.Maximized || this.Visibility == Visibility.Hidden)
             {
-                ms = IniReadValue("Message", "ms", inipath);
-                this.a.Content = ms;
+                ////ms = IniReadValue("Message", "ms", inipath);
+                itemsControl.ItemsSource = ms;
+                //this.a.Content = string.Join(Environment.NewLine, ms);
                 this.WindowStyle = WindowStyle.None;
                 this.WindowState = WindowState.Maximized;
                 this.ResizeMode = System.Windows.ResizeMode.NoResize;
                 this.Topmost = true;
                 this.Show();
                 Writelog("已提醒点检");
+                Y.IsEnabled = false;
                 dispatcherTimer.Stop();
             }
         }
@@ -340,12 +445,14 @@ namespace Checks
             }
 
         }
-        
+
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             e.Cancel = true;
         }
+
+        
 
         /////////config.ini////////////////
         //        [check]               ///
@@ -364,6 +471,8 @@ namespace Checks
         //                              ///
         //保存为unicode或 UTF-16LE      ///
         ///////////////////////////////////
+
+
 
     }
 }
