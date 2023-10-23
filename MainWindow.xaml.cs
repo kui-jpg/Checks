@@ -14,6 +14,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using System.Diagnostics;
@@ -81,7 +82,7 @@ namespace Checks
             if (sender is System.Windows.Controls.Button button)
             {
                 string itemText = button.Content as string;
-                
+
                 if (itemText != null)
                 {
                     button.Content = "已确认";
@@ -163,6 +164,7 @@ namespace Checks
             times = Readini(inipath);
             //Writelog("进入check");
             //获取输出输出信息
+            ms = IniReadValue("Message", "ms", inipath);
             lasttime = IniReadValue("LastTime", "last", inipath);
             DateTime last = DateTime.Parse(lasttime);
             DateTime now = DateTime.Now;
@@ -173,17 +175,17 @@ namespace Checks
                 //提醒条件
                 //1、设置距离上一次提醒时间超过十分钟
                 //2、当前时间不超过设置时间十分钟
-                for (int i = 0; i < times.Count(); i++)
-                {
+            for (int i = 0; i < times.Count(); i++)
+            {
 
 
                     DateTime check = DateTime.Parse(DateTime.Now.ToShortDateString() + " " + times[i].ToString());
                     //当前时间不超过设定时间10分钟可以提醒
                     if (CheckTimeConditions(last, check, now))
-                    {
+                {
                         //Writelog("在设定时间内");
                         if (WindowState != WindowState.Maximized || this.Visibility == Visibility.Hidden)
-                        {
+                    {
                             //Writelog("获取提示内容");
                             msTime = check;
                             string[] msg = GetMessageByKey("message" + i);
@@ -193,14 +195,14 @@ namespace Checks
 
                     }
                 }
-            }
+                    }
             catch (Exception ex)
-            {
+                    {
 
                 Writelog(ex.ToString());
-            }
+                    }
 
-        }
+                        }
 
         /// <summary>
         /// 提醒
@@ -446,6 +448,11 @@ namespace Checks
 
         }
 
+
+        /// <summary>
+        /// 检查是否设置开机自启
+        /// 若没有就设置成自启
+        /// </summary>
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
