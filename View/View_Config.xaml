@@ -1,4 +1,5 @@
-﻿<Window x:Class="Checks.View.View_Config"
+﻿<Window xmlns:hc="https://handyorg.github.io/handycontrol"  
+        x:Class="Checks.View.View_Config"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -21,8 +22,36 @@
             <RowDefinition/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="4">
-            <DataGrid></DataGrid>
-        </StackPanel>
+        <DockPanel>
+            <Menu DockPanel.Dock="Top">
+                <MenuItem Header="保存">
+                </MenuItem>
+            </Menu>
+            <Menu>
+                <MenuItem>
+                    
+                </MenuItem>
+            </Menu>
+        </DockPanel>
+        <TextBlock Text="aaaaa" Grid.Column="4" Grid.Row="0"/>
+        <ItemsControl Name="ItemsControltimes"  Grid.Row="1" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="4">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding Name}" Grid.Column="0"/>
+                        <TextBlock Text="{Binding checktimes}" Grid.Column="1" />
+                        <hc:TimePicker  
+                            Grid.Row="1" Grid.Column="2" Name="dateTimepcker2"   Text="{Binding checktimes}"
+                            Width="87" Height="30" 
+                            TimeFormat="HH:mm:ss" />
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
     </Grid>
 </Window>

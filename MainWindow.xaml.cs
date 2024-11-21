@@ -35,7 +35,7 @@ namespace Checks
         private string[] times;
         private string ms;
         private string lasttime;
-        private string inipath = @".\config.ini";
+        public string inipath = @".\config.ini";
         private DateTime msTime;
         DispatcherTimer dispatcherTimer = new DispatcherTimer();
         private int ClickCount = 0;//判断点击次数
@@ -47,7 +47,6 @@ namespace Checks
             InitializeComponent();
 
             _configManager = new IniConfigManager(inipath);
-
             int pin = Screen.AllScreens.Count();
             this.Topmost = true;
             this.Hide();
@@ -73,7 +72,7 @@ namespace Checks
             //添加任务栏图标
             InitializeComponent();
             notifyIcon = new NotifyIcon();
-            notifyIcon.Icon = new Icon("R-C.ico");
+            notifyIcon.Icon = new Icon(System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/Resources/R-C.ico", UriKind.RelativeOrAbsolute)).Stream);
             notifyIcon.Text = "Check";
             System.Windows.Forms.ContextMenu contextMenu = new System.Windows.Forms.ContextMenu();
             contextMenu.MenuItems.Add("Open Window", OpenWindow_Click);

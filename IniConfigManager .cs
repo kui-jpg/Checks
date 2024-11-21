@@ -25,6 +25,8 @@ namespace Checks
             return temp.ToString();
         }
 
+        
+
         public void WriteValue(string section, string key, string value, bool overwrite = true)
         {
             if (!overwrite && KeyExists(section, key))
